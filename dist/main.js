@@ -861,7 +861,7 @@ eval("//　ディレクトリを作成します\nexports.createDirectory = (path
   \******************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-eval("//　QRコード画像を作成します\nexports.createQrCcode = (text, name, destination) => {\n    const QRCode = __webpack_require__(/*! qrcode */ \"./node_modules/qrcode/lib/index.js\");\n    const options = {\n        errorCorrectionLevel: 'M',\n        version: '4',\n        scale: '4',\n        maskPattern: '101',\n        mode: 'byte',\n    };\n    try {\n        if (text == null || name == null || destination == null) {\n            throw Error;\n        }\n        // QRコード画像\n        QRCode.toFile(`${destination}/${name}.png`, text, options);\n    }\n    catch (Error) {\n        throw 'QRコードを作成できませんでした';\n    }\n};\n\n\n//# sourceURL=webpack://qr_code/./src/Create/qrCode.ts?");
+eval("//　QRコード画像を作成します\nexports.createQrCcode = (text, name, destination) => {\n    const QRCode = __webpack_require__(/*! qrcode */ \"./node_modules/qrcode/lib/index.js\");\n    const options = {\n        errorCorrectionLevel: \"M\",\n        version: \"4\",\n        scale: \"4\",\n        maskPattern: \"101\",\n        mode: \"byte\",\n    };\n    try {\n        if (text == null || name == null || destination == null) {\n            throw Error;\n        }\n        // QRコード画像\n        QRCode.toFile(`${destination}/${name}.png`, text.replace(/\\r?\\n/g, \"\"), options);\n    }\n    catch (Error) {\n        throw \"QRコードを作成できませんでした\";\n    }\n};\n\n\n//# sourceURL=webpack://qr_code/./src/Create/qrCode.ts?");
 
 /***/ }),
 
