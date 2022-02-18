@@ -9,137 +9,6 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./node_modules/canvas/index.js":
-/*!**************************************!*\
-  !*** ./node_modules/canvas/index.js ***!
-  \**************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-eval("const Canvas = __webpack_require__(/*! ./lib/canvas */ \"./node_modules/canvas/lib/canvas.js\")\nconst Image = __webpack_require__(/*! ./lib/image */ \"./node_modules/canvas/lib/image.js\")\nconst CanvasRenderingContext2D = __webpack_require__(/*! ./lib/context2d */ \"./node_modules/canvas/lib/context2d.js\")\nconst CanvasPattern = __webpack_require__(/*! ./lib/pattern */ \"./node_modules/canvas/lib/pattern.js\")\nconst parseFont = __webpack_require__(/*! ./lib/parse-font */ \"./node_modules/canvas/lib/parse-font.js\")\nconst packageJson = __webpack_require__(/*! ./package.json */ \"./node_modules/canvas/package.json\")\nconst bindings = __webpack_require__(/*! ./lib/bindings */ \"./node_modules/canvas/lib/bindings.js\")\nconst fs = __webpack_require__(/*! fs */ \"fs\")\nconst PNGStream = __webpack_require__(/*! ./lib/pngstream */ \"./node_modules/canvas/lib/pngstream.js\")\nconst PDFStream = __webpack_require__(/*! ./lib/pdfstream */ \"./node_modules/canvas/lib/pdfstream.js\")\nconst JPEGStream = __webpack_require__(/*! ./lib/jpegstream */ \"./node_modules/canvas/lib/jpegstream.js\")\nconst { DOMPoint, DOMMatrix } = __webpack_require__(/*! ./lib/DOMMatrix */ \"./node_modules/canvas/lib/DOMMatrix.js\")\n\nfunction createCanvas (width, height, type) {\n  return new Canvas(width, height, type)\n}\n\nfunction createImageData (array, width, height) {\n  return new bindings.ImageData(array, width, height)\n}\n\nfunction loadImage (src) {\n  return new Promise((resolve, reject) => {\n    const image = new Image()\n\n    function cleanup () {\n      image.onload = null\n      image.onerror = null\n    }\n\n    image.onload = () => { cleanup(); resolve(image) }\n    image.onerror = (err) => { cleanup(); reject(err) }\n\n    image.src = src\n  })\n}\n\n/**\n * Resolve paths for registerFont. Must be called *before* creating a Canvas\n * instance.\n * @param src {string} Path to font file.\n * @param fontFace {{family: string, weight?: string, style?: string}} Object\n * specifying font information. `weight` and `style` default to `\"normal\"`.\n */\nfunction registerFont (src, fontFace) {\n  // TODO this doesn't need to be on Canvas; it should just be a static method\n  // of `bindings`.\n  return Canvas._registerFont(fs.realpathSync(src), fontFace)\n}\n\n/**\n * Unload all fonts from pango to free up memory\n */\nfunction deregisterAllFonts () {\n  return Canvas._deregisterAllFonts()\n}\n\nmodule.exports = {\n  Canvas,\n  Context2d: CanvasRenderingContext2D, // Legacy/compat export\n  CanvasRenderingContext2D,\n  CanvasGradient: bindings.CanvasGradient,\n  CanvasPattern,\n  Image,\n  ImageData: bindings.ImageData,\n  PNGStream,\n  PDFStream,\n  JPEGStream,\n  DOMMatrix,\n  DOMPoint,\n\n  registerFont,\n  deregisterAllFonts,\n  parseFont,\n\n  createCanvas,\n  createImageData,\n  loadImage,\n\n  backends: bindings.Backends,\n\n  /** Library version. */\n  version: packageJson.version,\n  /** Cairo version. */\n  cairoVersion: bindings.cairoVersion,\n  /** jpeglib version. */\n  jpegVersion: bindings.jpegVersion,\n  /** gif_lib version. */\n  gifVersion: bindings.gifVersion ? bindings.gifVersion.replace(/[^.\\d]/g, '') : undefined,\n  /** freetype version. */\n  freetypeVersion: bindings.freetypeVersion,\n  /** rsvg version. */\n  rsvgVersion: bindings.rsvgVersion\n}\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/index.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/DOMMatrix.js":
-/*!**********************************************!*\
-  !*** ./node_modules/canvas/lib/DOMMatrix.js ***!
-  \**********************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\n\nconst util = __webpack_require__(/*! util */ \"util\")\n\n// DOMMatrix per https://drafts.fxtf.org/geometry/#DOMMatrix\n\nclass DOMPoint {\n  constructor (x, y, z, w) {\n    if (typeof x === 'object' && x !== null) {\n      w = x.w\n      z = x.z\n      y = x.y\n      x = x.x\n    }\n    this.x = typeof x === 'number' ? x : 0\n    this.y = typeof y === 'number' ? y : 0\n    this.z = typeof z === 'number' ? z : 0\n    this.w = typeof w === 'number' ? w : 1\n  }\n}\n\n// Constants to index into _values (col-major)\nconst M11 = 0; const M12 = 1; const M13 = 2; const M14 = 3\nconst M21 = 4; const M22 = 5; const M23 = 6; const M24 = 7\nconst M31 = 8; const M32 = 9; const M33 = 10; const M34 = 11\nconst M41 = 12; const M42 = 13; const M43 = 14; const M44 = 15\n\nconst DEGREE_PER_RAD = 180 / Math.PI\nconst RAD_PER_DEGREE = Math.PI / 180\n\nfunction parseMatrix (init) {\n  let parsed = init.replace('matrix(', '')\n  parsed = parsed.split(',', 7) // 6 + 1 to handle too many params\n  if (parsed.length !== 6) throw new Error(`Failed to parse ${init}`)\n  parsed = parsed.map(parseFloat)\n  return [\n    parsed[0], parsed[1], 0, 0,\n    parsed[2], parsed[3], 0, 0,\n    0, 0, 1, 0,\n    parsed[4], parsed[5], 0, 1\n  ]\n}\n\nfunction parseMatrix3d (init) {\n  let parsed = init.replace('matrix3d(', '')\n  parsed = parsed.split(',', 17) // 16 + 1 to handle too many params\n  if (parsed.length !== 16) throw new Error(`Failed to parse ${init}`)\n  return parsed.map(parseFloat)\n}\n\nfunction parseTransform (tform) {\n  const type = tform.split('(', 1)[0]\n  switch (type) {\n    case 'matrix':\n      return parseMatrix(tform)\n    case 'matrix3d':\n      return parseMatrix3d(tform)\n    // TODO This is supposed to support any CSS transform value.\n    default:\n      throw new Error(`${type} parsing not implemented`)\n  }\n}\n\nclass DOMMatrix {\n  constructor (init) {\n    this._is2D = true\n    this._values = new Float64Array([\n      1, 0, 0, 0,\n      0, 1, 0, 0,\n      0, 0, 1, 0,\n      0, 0, 0, 1\n    ])\n\n    let i\n\n    if (typeof init === 'string') { // parse CSS transformList\n      if (init === '') return // default identity matrix\n      const tforms = init.split(/\\)\\s+/, 20).map(parseTransform)\n      if (tforms.length === 0) return\n      init = tforms[0]\n      for (i = 1; i < tforms.length; i++) init = multiply(tforms[i], init)\n    }\n\n    i = 0\n    if (init && init.length === 6) {\n      setNumber2D(this, M11, init[i++])\n      setNumber2D(this, M12, init[i++])\n      setNumber2D(this, M21, init[i++])\n      setNumber2D(this, M22, init[i++])\n      setNumber2D(this, M41, init[i++])\n      setNumber2D(this, M42, init[i++])\n    } else if (init && init.length === 16) {\n      setNumber2D(this, M11, init[i++])\n      setNumber2D(this, M12, init[i++])\n      setNumber3D(this, M13, init[i++])\n      setNumber3D(this, M14, init[i++])\n      setNumber2D(this, M21, init[i++])\n      setNumber2D(this, M22, init[i++])\n      setNumber3D(this, M23, init[i++])\n      setNumber3D(this, M24, init[i++])\n      setNumber3D(this, M31, init[i++])\n      setNumber3D(this, M32, init[i++])\n      setNumber3D(this, M33, init[i++])\n      setNumber3D(this, M34, init[i++])\n      setNumber2D(this, M41, init[i++])\n      setNumber2D(this, M42, init[i++])\n      setNumber3D(this, M43, init[i++])\n      setNumber3D(this, M44, init[i])\n    } else if (init !== undefined) {\n      throw new TypeError('Expected string or array.')\n    }\n  }\n\n  toString () {\n    return this.is2D\n      ? `matrix(${this.a}, ${this.b}, ${this.c}, ${this.d}, ${this.e}, ${this.f})`\n      : `matrix3d(${this._values.join(', ')})`\n  }\n\n  multiply (other) {\n    return newInstance(this._values).multiplySelf(other)\n  }\n\n  multiplySelf (other) {\n    this._values = multiply(other._values, this._values)\n    if (!other.is2D) this._is2D = false\n    return this\n  }\n\n  preMultiplySelf (other) {\n    this._values = multiply(this._values, other._values)\n    if (!other.is2D) this._is2D = false\n    return this\n  }\n\n  translate (tx, ty, tz) {\n    return newInstance(this._values).translateSelf(tx, ty, tz)\n  }\n\n  translateSelf (tx, ty, tz) {\n    if (typeof tx !== 'number') tx = 0\n    if (typeof ty !== 'number') ty = 0\n    if (typeof tz !== 'number') tz = 0\n    this._values = multiply([\n      1, 0, 0, 0,\n      0, 1, 0, 0,\n      0, 0, 1, 0,\n      tx, ty, tz, 1\n    ], this._values)\n    if (tz !== 0) this._is2D = false\n    return this\n  }\n\n  scale (scaleX, scaleY, scaleZ, originX, originY, originZ) {\n    return newInstance(this._values).scaleSelf(scaleX, scaleY, scaleZ, originX, originY, originZ)\n  }\n\n  scale3d (scale, originX, originY, originZ) {\n    return newInstance(this._values).scale3dSelf(scale, originX, originY, originZ)\n  }\n\n  scale3dSelf (scale, originX, originY, originZ) {\n    return this.scaleSelf(scale, scale, scale, originX, originY, originZ)\n  }\n\n  scaleSelf (scaleX, scaleY, scaleZ, originX, originY, originZ) {\n    // Not redundant with translate's checks because we need to negate the values later.\n    if (typeof originX !== 'number') originX = 0\n    if (typeof originY !== 'number') originY = 0\n    if (typeof originZ !== 'number') originZ = 0\n    this.translateSelf(originX, originY, originZ)\n    if (typeof scaleX !== 'number') scaleX = 1\n    if (typeof scaleY !== 'number') scaleY = scaleX\n    if (typeof scaleZ !== 'number') scaleZ = 1\n    this._values = multiply([\n      scaleX, 0, 0, 0,\n      0, scaleY, 0, 0,\n      0, 0, scaleZ, 0,\n      0, 0, 0, 1\n    ], this._values)\n    this.translateSelf(-originX, -originY, -originZ)\n    if (scaleZ !== 1 || originZ !== 0) this._is2D = false\n    return this\n  }\n\n  rotateFromVector (x, y) {\n    return newInstance(this._values).rotateFromVectorSelf(x, y)\n  }\n\n  rotateFromVectorSelf (x, y) {\n    if (typeof x !== 'number') x = 0\n    if (typeof y !== 'number') y = 0\n    const theta = (x === 0 && y === 0) ? 0 : Math.atan2(y, x) * DEGREE_PER_RAD\n    return this.rotateSelf(theta)\n  }\n\n  rotate (rotX, rotY, rotZ) {\n    return newInstance(this._values).rotateSelf(rotX, rotY, rotZ)\n  }\n\n  rotateSelf (rotX, rotY, rotZ) {\n    if (rotY === undefined && rotZ === undefined) {\n      rotZ = rotX\n      rotX = rotY = 0\n    }\n    if (typeof rotY !== 'number') rotY = 0\n    if (typeof rotZ !== 'number') rotZ = 0\n    if (rotX !== 0 || rotY !== 0) this._is2D = false\n    rotX *= RAD_PER_DEGREE\n    rotY *= RAD_PER_DEGREE\n    rotZ *= RAD_PER_DEGREE\n    let c, s\n    c = Math.cos(rotZ)\n    s = Math.sin(rotZ)\n    this._values = multiply([\n      c, s, 0, 0,\n      -s, c, 0, 0,\n      0, 0, 1, 0,\n      0, 0, 0, 1\n    ], this._values)\n    c = Math.cos(rotY)\n    s = Math.sin(rotY)\n    this._values = multiply([\n      c, 0, -s, 0,\n      0, 1, 0, 0,\n      s, 0, c, 0,\n      0, 0, 0, 1\n    ], this._values)\n    c = Math.cos(rotX)\n    s = Math.sin(rotX)\n    this._values = multiply([\n      1, 0, 0, 0,\n      0, c, s, 0,\n      0, -s, c, 0,\n      0, 0, 0, 1\n    ], this._values)\n    return this\n  }\n\n  rotateAxisAngle (x, y, z, angle) {\n    return newInstance(this._values).rotateAxisAngleSelf(x, y, z, angle)\n  }\n\n  rotateAxisAngleSelf (x, y, z, angle) {\n    if (typeof x !== 'number') x = 0\n    if (typeof y !== 'number') y = 0\n    if (typeof z !== 'number') z = 0\n    // Normalize axis\n    const length = Math.sqrt(x * x + y * y + z * z)\n    if (length === 0) return this\n    if (length !== 1) {\n      x /= length\n      y /= length\n      z /= length\n    }\n    angle *= RAD_PER_DEGREE\n    const c = Math.cos(angle)\n    const s = Math.sin(angle)\n    const t = 1 - c\n    const tx = t * x\n    const ty = t * y\n    // NB: This is the generic transform. If the axis is a major axis, there are\n    // faster transforms.\n    this._values = multiply([\n      tx * x + c, tx * y + s * z, tx * z - s * y, 0,\n      tx * y - s * z, ty * y + c, ty * z + s * x, 0,\n      tx * z + s * y, ty * z - s * x, t * z * z + c, 0,\n      0, 0, 0, 1\n    ], this._values)\n    if (x !== 0 || y !== 0) this._is2D = false\n    return this\n  }\n\n  skewX (sx) {\n    return newInstance(this._values).skewXSelf(sx)\n  }\n\n  skewXSelf (sx) {\n    if (typeof sx !== 'number') return this\n    const t = Math.tan(sx * RAD_PER_DEGREE)\n    this._values = multiply([\n      1, 0, 0, 0,\n      t, 1, 0, 0,\n      0, 0, 1, 0,\n      0, 0, 0, 1\n    ], this._values)\n    return this\n  }\n\n  skewY (sy) {\n    return newInstance(this._values).skewYSelf(sy)\n  }\n\n  skewYSelf (sy) {\n    if (typeof sy !== 'number') return this\n    const t = Math.tan(sy * RAD_PER_DEGREE)\n    this._values = multiply([\n      1, t, 0, 0,\n      0, 1, 0, 0,\n      0, 0, 1, 0,\n      0, 0, 0, 1\n    ], this._values)\n    return this\n  }\n\n  flipX () {\n    return newInstance(multiply([\n      -1, 0, 0, 0,\n      0, 1, 0, 0,\n      0, 0, 1, 0,\n      0, 0, 0, 1\n    ], this._values))\n  }\n\n  flipY () {\n    return newInstance(multiply([\n      1, 0, 0, 0,\n      0, -1, 0, 0,\n      0, 0, 1, 0,\n      0, 0, 0, 1\n    ], this._values))\n  }\n\n  inverse () {\n    return newInstance(this._values).invertSelf()\n  }\n\n  invertSelf () {\n    const m = this._values\n    const inv = m.map(v => 0)\n\n    inv[0] = m[5] * m[10] * m[15] -\n            m[5] * m[11] * m[14] -\n            m[9] * m[6] * m[15] +\n            m[9] * m[7] * m[14] +\n            m[13] * m[6] * m[11] -\n            m[13] * m[7] * m[10]\n\n    inv[4] = -m[4] * m[10] * m[15] +\n            m[4] * m[11] * m[14] +\n            m[8] * m[6] * m[15] -\n            m[8] * m[7] * m[14] -\n            m[12] * m[6] * m[11] +\n            m[12] * m[7] * m[10]\n\n    inv[8] = m[4] * m[9] * m[15] -\n            m[4] * m[11] * m[13] -\n            m[8] * m[5] * m[15] +\n            m[8] * m[7] * m[13] +\n            m[12] * m[5] * m[11] -\n            m[12] * m[7] * m[9]\n\n    inv[12] = -m[4] * m[9] * m[14] +\n            m[4] * m[10] * m[13] +\n            m[8] * m[5] * m[14] -\n            m[8] * m[6] * m[13] -\n            m[12] * m[5] * m[10] +\n            m[12] * m[6] * m[9]\n\n    // If the determinant is zero, this matrix cannot be inverted, and all\n    // values should be set to NaN, with the is2D flag set to false.\n\n    const det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12]\n\n    if (det === 0) {\n      this._values = m.map(v => NaN)\n      this._is2D = false\n      return this\n    }\n\n    inv[1] = -m[1] * m[10] * m[15] +\n            m[1] * m[11] * m[14] +\n            m[9] * m[2] * m[15] -\n            m[9] * m[3] * m[14] -\n            m[13] * m[2] * m[11] +\n            m[13] * m[3] * m[10]\n\n    inv[5] = m[0] * m[10] * m[15] -\n            m[0] * m[11] * m[14] -\n            m[8] * m[2] * m[15] +\n            m[8] * m[3] * m[14] +\n            m[12] * m[2] * m[11] -\n            m[12] * m[3] * m[10]\n\n    inv[9] = -m[0] * m[9] * m[15] +\n            m[0] * m[11] * m[13] +\n            m[8] * m[1] * m[15] -\n            m[8] * m[3] * m[13] -\n            m[12] * m[1] * m[11] +\n            m[12] * m[3] * m[9]\n\n    inv[13] = m[0] * m[9] * m[14] -\n            m[0] * m[10] * m[13] -\n            m[8] * m[1] * m[14] +\n            m[8] * m[2] * m[13] +\n            m[12] * m[1] * m[10] -\n            m[12] * m[2] * m[9]\n\n    inv[2] = m[1] * m[6] * m[15] -\n            m[1] * m[7] * m[14] -\n            m[5] * m[2] * m[15] +\n            m[5] * m[3] * m[14] +\n            m[13] * m[2] * m[7] -\n            m[13] * m[3] * m[6]\n\n    inv[6] = -m[0] * m[6] * m[15] +\n            m[0] * m[7] * m[14] +\n            m[4] * m[2] * m[15] -\n            m[4] * m[3] * m[14] -\n            m[12] * m[2] * m[7] +\n            m[12] * m[3] * m[6]\n\n    inv[10] = m[0] * m[5] * m[15] -\n            m[0] * m[7] * m[13] -\n            m[4] * m[1] * m[15] +\n            m[4] * m[3] * m[13] +\n            m[12] * m[1] * m[7] -\n            m[12] * m[3] * m[5]\n\n    inv[14] = -m[0] * m[5] * m[14] +\n            m[0] * m[6] * m[13] +\n            m[4] * m[1] * m[14] -\n            m[4] * m[2] * m[13] -\n            m[12] * m[1] * m[6] +\n            m[12] * m[2] * m[5]\n\n    inv[3] = -m[1] * m[6] * m[11] +\n            m[1] * m[7] * m[10] +\n            m[5] * m[2] * m[11] -\n            m[5] * m[3] * m[10] -\n            m[9] * m[2] * m[7] +\n            m[9] * m[3] * m[6]\n\n    inv[7] = m[0] * m[6] * m[11] -\n            m[0] * m[7] * m[10] -\n            m[4] * m[2] * m[11] +\n            m[4] * m[3] * m[10] +\n            m[8] * m[2] * m[7] -\n            m[8] * m[3] * m[6]\n\n    inv[11] = -m[0] * m[5] * m[11] +\n            m[0] * m[7] * m[9] +\n            m[4] * m[1] * m[11] -\n            m[4] * m[3] * m[9] -\n            m[8] * m[1] * m[7] +\n            m[8] * m[3] * m[5]\n\n    inv[15] = m[0] * m[5] * m[10] -\n            m[0] * m[6] * m[9] -\n            m[4] * m[1] * m[10] +\n            m[4] * m[2] * m[9] +\n            m[8] * m[1] * m[6] -\n            m[8] * m[2] * m[5]\n\n    inv.forEach((v, i) => { inv[i] = v / det })\n    this._values = inv\n    return this\n  }\n\n  setMatrixValue (transformList) {\n    const temp = new DOMMatrix(transformList)\n    this._values = temp._values\n    this._is2D = temp._is2D\n    return this\n  }\n\n  transformPoint (point) {\n    point = new DOMPoint(point)\n    const x = point.x\n    const y = point.y\n    const z = point.z\n    const w = point.w\n    const values = this._values\n    const nx = values[M11] * x + values[M21] * y + values[M31] * z + values[M41] * w\n    const ny = values[M12] * x + values[M22] * y + values[M32] * z + values[M42] * w\n    const nz = values[M13] * x + values[M23] * y + values[M33] * z + values[M43] * w\n    const nw = values[M14] * x + values[M24] * y + values[M34] * z + values[M44] * w\n    return new DOMPoint(nx, ny, nz, nw)\n  }\n\n  toFloat32Array () {\n    return Float32Array.from(this._values)\n  }\n\n  toFloat64Array () {\n    return this._values.slice(0)\n  }\n\n  static fromMatrix (init) {\n    if (!(init instanceof DOMMatrix)) throw new TypeError('Expected DOMMatrix')\n    return new DOMMatrix(init._values)\n  }\n\n  static fromFloat32Array (init) {\n    if (!(init instanceof Float32Array)) throw new TypeError('Expected Float32Array')\n    return new DOMMatrix(init)\n  }\n\n  static fromFloat64Array (init) {\n    if (!(init instanceof Float64Array)) throw new TypeError('Expected Float64Array')\n    return new DOMMatrix(init)\n  }\n\n  [util.inspect.custom || 'inspect'] (depth, options) {\n    if (depth < 0) return '[DOMMatrix]'\n\n    return `DOMMatrix [\n      a: ${this.a}\n      b: ${this.b}\n      c: ${this.c}\n      d: ${this.d}\n      e: ${this.e}\n      f: ${this.f}\n      m11: ${this.m11}\n      m12: ${this.m12}\n      m13: ${this.m13}\n      m14: ${this.m14}\n      m21: ${this.m21}\n      m22: ${this.m22}\n      m23: ${this.m23}\n      m23: ${this.m23}\n      m31: ${this.m31}\n      m32: ${this.m32}\n      m33: ${this.m33}\n      m34: ${this.m34}\n      m41: ${this.m41}\n      m42: ${this.m42}\n      m43: ${this.m43}\n      m44: ${this.m44}\n      is2D: ${this.is2D}\n      isIdentity: ${this.isIdentity} ]`\n  }\n}\n\n/**\n * Checks that `value` is a number and sets the value.\n */\nfunction setNumber2D (receiver, index, value) {\n  if (typeof value !== 'number') throw new TypeError('Expected number')\n  return (receiver._values[index] = value)\n}\n\n/**\n * Checks that `value` is a number, sets `_is2D = false` if necessary and sets\n * the value.\n */\nfunction setNumber3D (receiver, index, value) {\n  if (typeof value !== 'number') throw new TypeError('Expected number')\n  if (index === M33 || index === M44) {\n    if (value !== 1) receiver._is2D = false\n  } else if (value !== 0) receiver._is2D = false\n  return (receiver._values[index] = value)\n}\n\nObject.defineProperties(DOMMatrix.prototype, {\n  m11: { get () { return this._values[M11] }, set (v) { return setNumber2D(this, M11, v) } },\n  m12: { get () { return this._values[M12] }, set (v) { return setNumber2D(this, M12, v) } },\n  m13: { get () { return this._values[M13] }, set (v) { return setNumber3D(this, M13, v) } },\n  m14: { get () { return this._values[M14] }, set (v) { return setNumber3D(this, M14, v) } },\n  m21: { get () { return this._values[M21] }, set (v) { return setNumber2D(this, M21, v) } },\n  m22: { get () { return this._values[M22] }, set (v) { return setNumber2D(this, M22, v) } },\n  m23: { get () { return this._values[M23] }, set (v) { return setNumber3D(this, M23, v) } },\n  m24: { get () { return this._values[M24] }, set (v) { return setNumber3D(this, M24, v) } },\n  m31: { get () { return this._values[M31] }, set (v) { return setNumber3D(this, M31, v) } },\n  m32: { get () { return this._values[M32] }, set (v) { return setNumber3D(this, M32, v) } },\n  m33: { get () { return this._values[M33] }, set (v) { return setNumber3D(this, M33, v) } },\n  m34: { get () { return this._values[M34] }, set (v) { return setNumber3D(this, M34, v) } },\n  m41: { get () { return this._values[M41] }, set (v) { return setNumber2D(this, M41, v) } },\n  m42: { get () { return this._values[M42] }, set (v) { return setNumber2D(this, M42, v) } },\n  m43: { get () { return this._values[M43] }, set (v) { return setNumber3D(this, M43, v) } },\n  m44: { get () { return this._values[M44] }, set (v) { return setNumber3D(this, M44, v) } },\n\n  a: { get () { return this.m11 }, set (v) { return (this.m11 = v) } },\n  b: { get () { return this.m12 }, set (v) { return (this.m12 = v) } },\n  c: { get () { return this.m21 }, set (v) { return (this.m21 = v) } },\n  d: { get () { return this.m22 }, set (v) { return (this.m22 = v) } },\n  e: { get () { return this.m41 }, set (v) { return (this.m41 = v) } },\n  f: { get () { return this.m42 }, set (v) { return (this.m42 = v) } },\n\n  is2D: { get () { return this._is2D } }, // read-only\n\n  isIdentity: {\n    get () {\n      const values = this._values\n      return (values[M11] === 1 && values[M12] === 0 && values[M13] === 0 && values[M14] === 0 &&\n             values[M21] === 0 && values[M22] === 1 && values[M23] === 0 && values[M24] === 0 &&\n             values[M31] === 0 && values[M32] === 0 && values[M33] === 1 && values[M34] === 0 &&\n             values[M41] === 0 && values[M42] === 0 && values[M43] === 0 && values[M44] === 1)\n    }\n  }\n})\n\n/**\n * Instantiates a DOMMatrix, bypassing the constructor.\n * @param {Float64Array} values Value to assign to `_values`. This is assigned\n *   without copying (okay because all usages are followed by a  multiply).\n */\nfunction newInstance (values) {\n  const instance = Object.create(DOMMatrix.prototype)\n  instance.constructor = DOMMatrix\n  instance._is2D = true\n  instance._values = values\n  return instance\n}\n\nfunction multiply (A, B) {\n  const dest = new Float64Array(16)\n  for (let i = 0; i < 4; i++) {\n    for (let j = 0; j < 4; j++) {\n      let sum = 0\n      for (let k = 0; k < 4; k++) {\n        sum += A[i * 4 + k] * B[k * 4 + j]\n      }\n      dest[i * 4 + j] = sum\n    }\n  }\n  return dest\n}\n\nmodule.exports = { DOMMatrix, DOMPoint }\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/DOMMatrix.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/bindings.js":
-/*!*********************************************!*\
-  !*** ./node_modules/canvas/lib/bindings.js ***!
-  \*********************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\n\nmodule.exports = __webpack_require__(/*! ../build/Release/canvas.node */ \"./node_modules/canvas/build/Release/canvas.node\")\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/bindings.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/canvas.js":
-/*!*******************************************!*\
-  !*** ./node_modules/canvas/lib/canvas.js ***!
-  \*******************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\n\n/*!\n * Canvas\n * Copyright (c) 2010 LearnBoost <tj@learnboost.com>\n * MIT Licensed\n */\n\nconst bindings = __webpack_require__(/*! ./bindings */ \"./node_modules/canvas/lib/bindings.js\")\nconst Canvas = module.exports = bindings.Canvas\nconst Context2d = __webpack_require__(/*! ./context2d */ \"./node_modules/canvas/lib/context2d.js\")\nconst PNGStream = __webpack_require__(/*! ./pngstream */ \"./node_modules/canvas/lib/pngstream.js\")\nconst PDFStream = __webpack_require__(/*! ./pdfstream */ \"./node_modules/canvas/lib/pdfstream.js\")\nconst JPEGStream = __webpack_require__(/*! ./jpegstream */ \"./node_modules/canvas/lib/jpegstream.js\")\nconst FORMATS = ['image/png', 'image/jpeg']\nconst util = __webpack_require__(/*! util */ \"util\")\n\n// TODO || is for Node.js pre-v6.6.0\nCanvas.prototype[util.inspect.custom || 'inspect'] = function () {\n  return `[Canvas ${this.width}x${this.height}]`\n}\n\nCanvas.prototype.getContext = function (contextType, contextAttributes) {\n  if (contextType == '2d') {\n    const ctx = this._context2d || (this._context2d = new Context2d(this, contextAttributes))\n    this.context = ctx\n    ctx.canvas = this\n    return ctx\n  }\n}\n\nCanvas.prototype.pngStream =\nCanvas.prototype.createPNGStream = function (options) {\n  return new PNGStream(this, options)\n}\n\nCanvas.prototype.pdfStream =\nCanvas.prototype.createPDFStream = function (options) {\n  return new PDFStream(this, options)\n}\n\nCanvas.prototype.jpegStream =\nCanvas.prototype.createJPEGStream = function (options) {\n  return new JPEGStream(this, options)\n}\n\nCanvas.prototype.toDataURL = function (a1, a2, a3) {\n  // valid arg patterns (args -> [type, opts, fn]):\n  // [] -> ['image/png', null, null]\n  // [qual] -> ['image/png', null, null]\n  // [undefined] -> ['image/png', null, null]\n  // ['image/png'] -> ['image/png', null, null]\n  // ['image/png', qual] -> ['image/png', null, null]\n  // [fn] -> ['image/png', null, fn]\n  // [type, fn] -> [type, null, fn]\n  // [undefined, fn] -> ['image/png', null, fn]\n  // ['image/png', qual, fn] -> ['image/png', null, fn]\n  // ['image/jpeg', fn] -> ['image/jpeg', null, fn]\n  // ['image/jpeg', opts, fn] -> ['image/jpeg', opts, fn]\n  // ['image/jpeg', qual, fn] -> ['image/jpeg', {quality: qual}, fn]\n  // ['image/jpeg', undefined, fn] -> ['image/jpeg', null, fn]\n  // ['image/jpeg'] -> ['image/jpeg', null, fn]\n  // ['image/jpeg', opts] -> ['image/jpeg', opts, fn]\n  // ['image/jpeg', qual] -> ['image/jpeg', {quality: qual}, fn]\n\n  let type = 'image/png'\n  let opts = {}\n  let fn\n\n  if (typeof a1 === 'function') {\n    fn = a1\n  } else {\n    if (typeof a1 === 'string' && FORMATS.includes(a1.toLowerCase())) {\n      type = a1.toLowerCase()\n    }\n\n    if (typeof a2 === 'function') {\n      fn = a2\n    } else {\n      if (typeof a2 === 'object') {\n        opts = a2\n      } else if (typeof a2 === 'number') {\n        opts = { quality: Math.max(0, Math.min(1, a2)) }\n      }\n\n      if (typeof a3 === 'function') {\n        fn = a3\n      } else if (undefined !== a3) {\n        throw new TypeError(`${typeof a3} is not a function`)\n      }\n    }\n  }\n\n  if (this.width === 0 || this.height === 0) {\n    // Per spec, if the bitmap has no pixels, return this string:\n    const str = 'data:,'\n    if (fn) {\n      setTimeout(() => fn(null, str))\n      return\n    } else {\n      return str\n    }\n  }\n\n  if (fn) {\n    this.toBuffer((err, buf) => {\n      if (err) return fn(err)\n      fn(null, `data:${type};base64,${buf.toString('base64')}`)\n    }, type, opts)\n  } else {\n    return `data:${type};base64,${this.toBuffer(type, opts).toString('base64')}`\n  }\n}\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/canvas.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/context2d.js":
-/*!**********************************************!*\
-  !*** ./node_modules/canvas/lib/context2d.js ***!
-  \**********************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\n\n/*!\n * Canvas - Context2d\n * Copyright (c) 2010 LearnBoost <tj@learnboost.com>\n * MIT Licensed\n */\n\nconst bindings = __webpack_require__(/*! ./bindings */ \"./node_modules/canvas/lib/bindings.js\")\nconst parseFont = __webpack_require__(/*! ./parse-font */ \"./node_modules/canvas/lib/parse-font.js\")\nconst { DOMMatrix } = __webpack_require__(/*! ./DOMMatrix */ \"./node_modules/canvas/lib/DOMMatrix.js\")\n\nbindings.CanvasRenderingContext2dInit(DOMMatrix, parseFont)\nmodule.exports = bindings.CanvasRenderingContext2d\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/context2d.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/image.js":
-/*!******************************************!*\
-  !*** ./node_modules/canvas/lib/image.js ***!
-  \******************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\n\n/*!\n * Canvas - Image\n * Copyright (c) 2010 LearnBoost <tj@learnboost.com>\n * MIT Licensed\n */\n\n/**\n * Module dependencies.\n */\n\nconst bindings = __webpack_require__(/*! ./bindings */ \"./node_modules/canvas/lib/bindings.js\")\nconst Image = module.exports = bindings.Image\nconst util = __webpack_require__(/*! util */ \"util\")\n\n// Lazily loaded simple-get\nlet get\n\nconst { GetSource, SetSource } = bindings\n\nObject.defineProperty(Image.prototype, 'src', {\n  /**\n   * src setter. Valid values:\n   *  * `data:` URI\n   *  * Local file path\n   *  * HTTP or HTTPS URL\n   *  * Buffer containing image data (i.e. not a `data:` URI stored in a Buffer)\n   *\n   * @param {String|Buffer} val filename, buffer, data URI, URL\n   * @api public\n   */\n  set (val) {\n    if (typeof val === 'string') {\n      if (/^\\s*data:/.test(val)) { // data: URI\n        const commaI = val.indexOf(',')\n        // 'base64' must come before the comma\n        const isBase64 = val.lastIndexOf('base64', commaI) !== -1\n        const content = val.slice(commaI + 1)\n        setSource(this, Buffer.from(content, isBase64 ? 'base64' : 'utf8'), val)\n      } else if (/^\\s*https?:\\/\\//.test(val)) { // remote URL\n        const onerror = err => {\n          if (typeof this.onerror === 'function') {\n            this.onerror(err)\n          } else {\n            throw err\n          }\n        }\n\n        if (!get) get = __webpack_require__(/*! simple-get */ \"./node_modules/simple-get/index.js\")\n\n        get.concat(val, (err, res, data) => {\n          if (err) return onerror(err)\n\n          if (res.statusCode < 200 || res.statusCode >= 300) {\n            return onerror(new Error(`Server responded with ${res.statusCode}`))\n          }\n\n          setSource(this, data)\n        })\n      } else { // local file path assumed\n        setSource(this, val)\n      }\n    } else if (Buffer.isBuffer(val)) {\n      setSource(this, val)\n    }\n  },\n\n  get () {\n    // TODO https://github.com/Automattic/node-canvas/issues/118\n    return getSource(this)\n  },\n\n  configurable: true\n})\n\n// TODO || is for Node.js pre-v6.6.0\nImage.prototype[util.inspect.custom || 'inspect'] = function () {\n  return '[Image' +\n    (this.complete ? ':' + this.width + 'x' + this.height : '') +\n    (this.src ? ' ' + this.src : '') +\n    (this.complete ? ' complete' : '') +\n    ']'\n}\n\nfunction getSource (img) {\n  return img._originalSource || GetSource.call(img)\n}\n\nfunction setSource (img, src, origSrc) {\n  SetSource.call(img, src)\n  img._originalSource = origSrc\n}\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/image.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/jpegstream.js":
-/*!***********************************************!*\
-  !*** ./node_modules/canvas/lib/jpegstream.js ***!
-  \***********************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\n\n/*!\n * Canvas - JPEGStream\n * Copyright (c) 2010 LearnBoost <tj@learnboost.com>\n * MIT Licensed\n */\n\nconst { Readable } = __webpack_require__(/*! stream */ \"stream\")\nfunction noop () {}\n\nclass JPEGStream extends Readable {\n  constructor (canvas, options) {\n    super()\n\n    if (canvas.streamJPEGSync === undefined) {\n      throw new Error('node-canvas was built without JPEG support.')\n    }\n\n    this.options = options\n    this.canvas = canvas\n  }\n\n  _read () {\n    // For now we're not controlling the c++ code's data emission, so we only\n    // call canvas.streamJPEGSync once and let it emit data at will.\n    this._read = noop\n\n    this.canvas.streamJPEGSync(this.options, (err, chunk) => {\n      if (err) {\n        this.emit('error', err)\n      } else if (chunk) {\n        this.push(chunk)\n      } else {\n        this.push(null)\n      }\n    })\n  }\n};\n\nmodule.exports = JPEGStream\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/jpegstream.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/parse-font.js":
-/*!***********************************************!*\
-  !*** ./node_modules/canvas/lib/parse-font.js ***!
-  \***********************************************/
-/***/ ((module) => {
-
-"use strict";
-eval("\n\n/**\n * Font RegExp helpers.\n */\n\nconst weights = 'bold|bolder|lighter|[1-9]00'\nconst styles = 'italic|oblique'\nconst variants = 'small-caps'\nconst stretches = 'ultra-condensed|extra-condensed|condensed|semi-condensed|semi-expanded|expanded|extra-expanded|ultra-expanded'\nconst units = 'px|pt|pc|in|cm|mm|%|em|ex|ch|rem|q'\nconst string = '\\'([^\\']+)\\'|\"([^\"]+)\"|[\\\\w\\\\s-]+'\n\n// [ [ <‘font-style’> || <font-variant-css21> || <‘font-weight’> || <‘font-stretch’> ]?\n//    <‘font-size’> [ / <‘line-height’> ]? <‘font-family’> ]\n// https://drafts.csswg.org/css-fonts-3/#font-prop\nconst weightRe = new RegExp(`(${weights}) +`, 'i')\nconst styleRe = new RegExp(`(${styles}) +`, 'i')\nconst variantRe = new RegExp(`(${variants}) +`, 'i')\nconst stretchRe = new RegExp(`(${stretches}) +`, 'i')\nconst sizeFamilyRe = new RegExp(\n  `([\\\\d\\\\.]+)(${units}) *((?:${string})( *, *(?:${string}))*)`)\n\n/**\n * Cache font parsing.\n */\n\nconst cache = {}\n\nconst defaultHeight = 16 // pt, common browser default\n\n/**\n * Parse font `str`.\n *\n * @param {String} str\n * @return {Object} Parsed font. `size` is in device units. `unit` is the unit\n *   appearing in the input string.\n * @api private\n */\n\nmodule.exports = str => {\n  // Cached\n  if (cache[str]) return cache[str]\n\n  // Try for required properties first.\n  const sizeFamily = sizeFamilyRe.exec(str)\n  if (!sizeFamily) return // invalid\n\n  // Default values and required properties\n  const font = {\n    weight: 'normal',\n    style: 'normal',\n    stretch: 'normal',\n    variant: 'normal',\n    size: parseFloat(sizeFamily[1]),\n    unit: sizeFamily[2],\n    family: sizeFamily[3].replace(/[\"']/g, '').replace(/ *, */g, ',')\n  }\n\n  // Optional, unordered properties.\n  let weight, style, variant, stretch\n  // Stop search at `sizeFamily.index`\n  const substr = str.substring(0, sizeFamily.index)\n  if ((weight = weightRe.exec(substr))) font.weight = weight[1]\n  if ((style = styleRe.exec(substr))) font.style = style[1]\n  if ((variant = variantRe.exec(substr))) font.variant = variant[1]\n  if ((stretch = stretchRe.exec(substr))) font.stretch = stretch[1]\n\n  // Convert to device units. (`font.unit` is the original unit)\n  // TODO: ch, ex\n  switch (font.unit) {\n    case 'pt':\n      font.size /= 0.75\n      break\n    case 'pc':\n      font.size *= 16\n      break\n    case 'in':\n      font.size *= 96\n      break\n    case 'cm':\n      font.size *= 96.0 / 2.54\n      break\n    case 'mm':\n      font.size *= 96.0 / 25.4\n      break\n    case '%':\n      // TODO disabled because existing unit tests assume 100\n      // font.size *= defaultHeight / 100 / 0.75\n      break\n    case 'em':\n    case 'rem':\n      font.size *= defaultHeight / 0.75\n      break\n    case 'q':\n      font.size *= 96 / 25.4 / 4\n      break\n  }\n\n  return (cache[str] = font)\n}\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/parse-font.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/pattern.js":
-/*!********************************************!*\
-  !*** ./node_modules/canvas/lib/pattern.js ***!
-  \********************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\n\n/*!\n * Canvas - CanvasPattern\n * Copyright (c) 2010 LearnBoost <tj@learnboost.com>\n * MIT Licensed\n */\n\nconst bindings = __webpack_require__(/*! ./bindings */ \"./node_modules/canvas/lib/bindings.js\")\nconst { DOMMatrix } = __webpack_require__(/*! ./DOMMatrix */ \"./node_modules/canvas/lib/DOMMatrix.js\")\n\nbindings.CanvasPatternInit(DOMMatrix)\nmodule.exports = bindings.CanvasPattern\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/pattern.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/pdfstream.js":
-/*!**********************************************!*\
-  !*** ./node_modules/canvas/lib/pdfstream.js ***!
-  \**********************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\n\n/*!\n * Canvas - PDFStream\n */\n\nconst { Readable } = __webpack_require__(/*! stream */ \"stream\")\nfunction noop () {}\n\nclass PDFStream extends Readable {\n  constructor (canvas, options) {\n    super()\n\n    this.canvas = canvas\n    this.options = options\n  }\n\n  _read () {\n    // For now we're not controlling the c++ code's data emission, so we only\n    // call canvas.streamPDFSync once and let it emit data at will.\n    this._read = noop\n\n    this.canvas.streamPDFSync((err, chunk, len) => {\n      if (err) {\n        this.emit('error', err)\n      } else if (len) {\n        this.push(chunk)\n      } else {\n        this.push(null)\n      }\n    }, this.options)\n  }\n}\n\nmodule.exports = PDFStream\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/pdfstream.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/lib/pngstream.js":
-/*!**********************************************!*\
-  !*** ./node_modules/canvas/lib/pngstream.js ***!
-  \**********************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\n\n/*!\n * Canvas - PNGStream\n * Copyright (c) 2010 LearnBoost <tj@learnboost.com>\n * MIT Licensed\n */\n\nconst { Readable } = __webpack_require__(/*! stream */ \"stream\")\nfunction noop () {}\n\nclass PNGStream extends Readable {\n  constructor (canvas, options) {\n    super()\n\n    if (options &&\n      options.palette instanceof Uint8ClampedArray &&\n      options.palette.length % 4 !== 0) {\n      throw new Error('Palette length must be a multiple of 4.')\n    }\n    this.canvas = canvas\n    this.options = options || {}\n  }\n\n  _read () {\n    // For now we're not controlling the c++ code's data emission, so we only\n    // call canvas.streamPNGSync once and let it emit data at will.\n    this._read = noop\n\n    this.canvas.streamPNGSync((err, chunk, len) => {\n      if (err) {\n        this.emit('error', err)\n      } else if (len) {\n        this.push(chunk)\n      } else {\n        this.push(null)\n      }\n    }, this.options)\n  }\n}\n\nmodule.exports = PNGStream\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/lib/pngstream.js?");
-
-/***/ }),
-
-/***/ "./node_modules/decompress-response/index.js":
-/*!***************************************************!*\
-  !*** ./node_modules/decompress-response/index.js ***!
-  \***************************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-"use strict";
-eval("\nconst {PassThrough: PassThroughStream} = __webpack_require__(/*! stream */ \"stream\");\nconst zlib = __webpack_require__(/*! zlib */ \"zlib\");\nconst mimicResponse = __webpack_require__(/*! mimic-response */ \"./node_modules/mimic-response/index.js\");\n\nconst decompressResponse = response => {\n\tconst contentEncoding = (response.headers['content-encoding'] || '').toLowerCase();\n\n\tif (!['gzip', 'deflate', 'br'].includes(contentEncoding)) {\n\t\treturn response;\n\t}\n\n\tconst isBrotli = contentEncoding === 'br';\n\tif (isBrotli && typeof zlib.createBrotliDecompress !== 'function') {\n\t\treturn response;\n\t}\n\n\tconst decompress = isBrotli ? zlib.createBrotliDecompress() : zlib.createUnzip();\n\tconst stream = new PassThroughStream();\n\n\tmimicResponse(response, stream);\n\n\tdecompress.on('error', error => {\n\t\t// Ignore empty response\n\t\tif (error.code === 'Z_BUF_ERROR') {\n\t\t\tstream.end();\n\t\t\treturn;\n\t\t}\n\n\t\tstream.emit('error', error);\n\t});\n\n\tresponse.pipe(decompress).pipe(stream);\n\n\treturn stream;\n};\n\nmodule.exports = decompressResponse;\n// TODO: remove this in the next major version\nmodule.exports[\"default\"] = decompressResponse;\n\n\n//# sourceURL=webpack://qr_code/./node_modules/decompress-response/index.js?");
-
-/***/ }),
-
 /***/ "./node_modules/dijkstrajs/dijkstra.js":
 /*!*********************************************!*\
   !*** ./node_modules/dijkstrajs/dijkstra.js ***!
@@ -162,27 +31,6 @@ eval("\n\nmodule.exports = function encodeUtf8 (input) {\n  var result = []\n  v
 
 /***/ }),
 
-/***/ "./node_modules/mimic-response/index.js":
-/*!**********************************************!*\
-  !*** ./node_modules/mimic-response/index.js ***!
-  \**********************************************/
-/***/ ((module) => {
-
-"use strict";
-eval("\n\n// We define these manually to ensure they're always copied\n// even if they would move up the prototype chain\n// https://nodejs.org/api/http.html#http_class_http_incomingmessage\nconst knownProperties = [\n\t'aborted',\n\t'complete',\n\t'destroy',\n\t'headers',\n\t'httpVersion',\n\t'httpVersionMinor',\n\t'httpVersionMajor',\n\t'method',\n\t'rawHeaders',\n\t'rawTrailers',\n\t'setTimeout',\n\t'socket',\n\t'statusCode',\n\t'statusMessage',\n\t'trailers',\n\t'url'\n];\n\nmodule.exports = (fromStream, toStream) => {\n\tconst fromProperties = new Set(Object.keys(fromStream).concat(knownProperties));\n\n\tfor (const property of fromProperties) {\n\t\t// Don't overwrite existing properties.\n\t\tif (property in toStream) {\n\t\t\tcontinue;\n\t\t}\n\n\t\ttoStream[property] = typeof fromStream[property] === 'function' ? fromStream[property].bind(fromStream) : fromStream[property];\n\t}\n\n\treturn toStream;\n};\n\n\n//# sourceURL=webpack://qr_code/./node_modules/mimic-response/index.js?");
-
-/***/ }),
-
-/***/ "./node_modules/canvas/build/Release/canvas.node":
-/*!*******************************************************!*\
-  !*** ./node_modules/canvas/build/Release/canvas.node ***!
-  \*******************************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-eval("/* module decorator */ module = __webpack_require__.nmd(module);\n\ntry {\n  process.dlopen(module, __dirname + (__webpack_require__(/*! path */ \"path\").sep) + __webpack_require__.p + \"79f21bb677ef97784877d2dbd7820e73.node\");\n} catch (error) {\n  throw new Error('node-loader:\\n' + error);\n}\n\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/build/Release/canvas.node?");
-
-/***/ }),
-
 /***/ "./node_modules/node-uuid/uuid.js":
 /*!****************************************!*\
   !*** ./node_modules/node-uuid/uuid.js ***!
@@ -190,16 +38,6 @@ eval("/* module decorator */ module = __webpack_require__.nmd(module);\n\ntry {\
 /***/ ((module, exports, __webpack_require__) => {
 
 eval("var __WEBPACK_AMD_DEFINE_RESULT__;//     uuid.js\n//\n//     Copyright (c) 2010-2012 Robert Kieffer\n//     MIT License - http://opensource.org/licenses/mit-license.php\n\n/*global window, require, define */\n(function(_window) {\n  'use strict';\n\n  // Unique ID creation requires a high quality random # generator.  We feature\n  // detect to determine the best RNG source, normalizing to a function that\n  // returns 128-bits of randomness, since that's what's usually required\n  var _rng, _mathRNG, _nodeRNG, _whatwgRNG, _previousRoot;\n\n  function setupBrowser() {\n    // Allow for MSIE11 msCrypto\n    var _crypto = _window.crypto || _window.msCrypto;\n\n    if (!_rng && _crypto && _crypto.getRandomValues) {\n      // WHATWG crypto-based RNG - http://wiki.whatwg.org/wiki/Crypto\n      //\n      // Moderately fast, high quality\n      try {\n        var _rnds8 = new Uint8Array(16);\n        _whatwgRNG = _rng = function whatwgRNG() {\n          _crypto.getRandomValues(_rnds8);\n          return _rnds8;\n        };\n        _rng();\n      } catch(e) {}\n    }\n\n    if (!_rng) {\n      // Math.random()-based (RNG)\n      //\n      // If all else fails, use Math.random().  It's fast, but is of unspecified\n      // quality.\n      var  _rnds = new Array(16);\n      _mathRNG = _rng = function() {\n        for (var i = 0, r; i < 16; i++) {\n          if ((i & 0x03) === 0) { r = Math.random() * 0x100000000; }\n          _rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;\n        }\n\n        return _rnds;\n      };\n      if ('undefined' !== typeof console && console.warn) {\n        console.warn(\"[SECURITY] node-uuid: crypto not usable, falling back to insecure Math.random()\");\n      }\n    }\n  }\n\n  function setupNode() {\n    // Node.js crypto-based RNG - http://nodejs.org/docs/v0.6.2/api/crypto.html\n    //\n    // Moderately fast, high quality\n    if (true) {\n      try {\n        var _rb = (__webpack_require__(/*! crypto */ \"crypto\").randomBytes);\n        _nodeRNG = _rng = _rb && function() {return _rb(16);};\n        _rng();\n      } catch(e) {}\n    }\n  }\n\n  if (_window) {\n    setupBrowser();\n  } else {\n    setupNode();\n  }\n\n  // Buffer class to use\n  var BufferClass = ('function' === typeof Buffer) ? Buffer : Array;\n\n  // Maps for number <-> hex string conversion\n  var _byteToHex = [];\n  var _hexToByte = {};\n  for (var i = 0; i < 256; i++) {\n    _byteToHex[i] = (i + 0x100).toString(16).substr(1);\n    _hexToByte[_byteToHex[i]] = i;\n  }\n\n  // **`parse()` - Parse a UUID into it's component bytes**\n  function parse(s, buf, offset) {\n    var i = (buf && offset) || 0, ii = 0;\n\n    buf = buf || [];\n    s.toLowerCase().replace(/[0-9a-f]{2}/g, function(oct) {\n      if (ii < 16) { // Don't overflow!\n        buf[i + ii++] = _hexToByte[oct];\n      }\n    });\n\n    // Zero out remaining bytes if string was short\n    while (ii < 16) {\n      buf[i + ii++] = 0;\n    }\n\n    return buf;\n  }\n\n  // **`unparse()` - Convert UUID byte array (ala parse()) into a string**\n  function unparse(buf, offset) {\n    var i = offset || 0, bth = _byteToHex;\n    return  bth[buf[i++]] + bth[buf[i++]] +\n            bth[buf[i++]] + bth[buf[i++]] + '-' +\n            bth[buf[i++]] + bth[buf[i++]] + '-' +\n            bth[buf[i++]] + bth[buf[i++]] + '-' +\n            bth[buf[i++]] + bth[buf[i++]] + '-' +\n            bth[buf[i++]] + bth[buf[i++]] +\n            bth[buf[i++]] + bth[buf[i++]] +\n            bth[buf[i++]] + bth[buf[i++]];\n  }\n\n  // **`v1()` - Generate time-based UUID**\n  //\n  // Inspired by https://github.com/LiosK/UUID.js\n  // and http://docs.python.org/library/uuid.html\n\n  // random #'s we need to init node and clockseq\n  var _seedBytes = _rng();\n\n  // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)\n  var _nodeId = [\n    _seedBytes[0] | 0x01,\n    _seedBytes[1], _seedBytes[2], _seedBytes[3], _seedBytes[4], _seedBytes[5]\n  ];\n\n  // Per 4.2.2, randomize (14 bit) clockseq\n  var _clockseq = (_seedBytes[6] << 8 | _seedBytes[7]) & 0x3fff;\n\n  // Previous uuid creation time\n  var _lastMSecs = 0, _lastNSecs = 0;\n\n  // See https://github.com/broofa/node-uuid for API details\n  function v1(options, buf, offset) {\n    var i = buf && offset || 0;\n    var b = buf || [];\n\n    options = options || {};\n\n    var clockseq = (options.clockseq != null) ? options.clockseq : _clockseq;\n\n    // UUID timestamps are 100 nano-second units since the Gregorian epoch,\n    // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so\n    // time is handled internally as 'msecs' (integer milliseconds) and 'nsecs'\n    // (100-nanoseconds offset from msecs) since unix epoch, 1970-01-01 00:00.\n    var msecs = (options.msecs != null) ? options.msecs : new Date().getTime();\n\n    // Per 4.2.1.2, use count of uuid's generated during the current clock\n    // cycle to simulate higher resolution clock\n    var nsecs = (options.nsecs != null) ? options.nsecs : _lastNSecs + 1;\n\n    // Time since last uuid creation (in msecs)\n    var dt = (msecs - _lastMSecs) + (nsecs - _lastNSecs)/10000;\n\n    // Per 4.2.1.2, Bump clockseq on clock regression\n    if (dt < 0 && options.clockseq == null) {\n      clockseq = clockseq + 1 & 0x3fff;\n    }\n\n    // Reset nsecs if clock regresses (new clockseq) or we've moved onto a new\n    // time interval\n    if ((dt < 0 || msecs > _lastMSecs) && options.nsecs == null) {\n      nsecs = 0;\n    }\n\n    // Per 4.2.1.2 Throw error if too many uuids are requested\n    if (nsecs >= 10000) {\n      throw new Error('uuid.v1(): Can\\'t create more than 10M uuids/sec');\n    }\n\n    _lastMSecs = msecs;\n    _lastNSecs = nsecs;\n    _clockseq = clockseq;\n\n    // Per 4.1.4 - Convert from unix epoch to Gregorian epoch\n    msecs += 12219292800000;\n\n    // `time_low`\n    var tl = ((msecs & 0xfffffff) * 10000 + nsecs) % 0x100000000;\n    b[i++] = tl >>> 24 & 0xff;\n    b[i++] = tl >>> 16 & 0xff;\n    b[i++] = tl >>> 8 & 0xff;\n    b[i++] = tl & 0xff;\n\n    // `time_mid`\n    var tmh = (msecs / 0x100000000 * 10000) & 0xfffffff;\n    b[i++] = tmh >>> 8 & 0xff;\n    b[i++] = tmh & 0xff;\n\n    // `time_high_and_version`\n    b[i++] = tmh >>> 24 & 0xf | 0x10; // include version\n    b[i++] = tmh >>> 16 & 0xff;\n\n    // `clock_seq_hi_and_reserved` (Per 4.2.2 - include variant)\n    b[i++] = clockseq >>> 8 | 0x80;\n\n    // `clock_seq_low`\n    b[i++] = clockseq & 0xff;\n\n    // `node`\n    var node = options.node || _nodeId;\n    for (var n = 0; n < 6; n++) {\n      b[i + n] = node[n];\n    }\n\n    return buf ? buf : unparse(b);\n  }\n\n  // **`v4()` - Generate random UUID**\n\n  // See https://github.com/broofa/node-uuid for API details\n  function v4(options, buf, offset) {\n    // Deprecated - 'format' argument, as supported in v1.2\n    var i = buf && offset || 0;\n\n    if (typeof(options) === 'string') {\n      buf = (options === 'binary') ? new BufferClass(16) : null;\n      options = null;\n    }\n    options = options || {};\n\n    var rnds = options.random || (options.rng || _rng)();\n\n    // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`\n    rnds[6] = (rnds[6] & 0x0f) | 0x40;\n    rnds[8] = (rnds[8] & 0x3f) | 0x80;\n\n    // Copy bytes to buffer, if provided\n    if (buf) {\n      for (var ii = 0; ii < 16; ii++) {\n        buf[i + ii] = rnds[ii];\n      }\n    }\n\n    return buf || unparse(rnds);\n  }\n\n  // Export public API\n  var uuid = v4;\n  uuid.v1 = v1;\n  uuid.v4 = v4;\n  uuid.parse = parse;\n  uuid.unparse = unparse;\n  uuid.BufferClass = BufferClass;\n  uuid._rng = _rng;\n  uuid._mathRNG = _mathRNG;\n  uuid._nodeRNG = _nodeRNG;\n  uuid._whatwgRNG = _whatwgRNG;\n\n  if (( true) && module.exports) {\n    // Publish as node.js module\n    module.exports = uuid;\n  } else if (true) {\n    // Publish as AMD module\n    !(__WEBPACK_AMD_DEFINE_RESULT__ = (function() {return uuid;}).call(exports, __webpack_require__, exports, module),\n\t\t__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));\n\n\n  } else {}\n})('undefined' !== typeof window ? window : null);\n\n\n//# sourceURL=webpack://qr_code/./node_modules/node-uuid/uuid.js?");
-
-/***/ }),
-
-/***/ "./node_modules/once/once.js":
-/*!***********************************!*\
-  !*** ./node_modules/once/once.js ***!
-  \***********************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-eval("var wrappy = __webpack_require__(/*! wrappy */ \"./node_modules/wrappy/wrappy.js\")\nmodule.exports = wrappy(once)\nmodule.exports.strict = wrappy(onceStrict)\n\nonce.proto = once(function () {\n  Object.defineProperty(Function.prototype, 'once', {\n    value: function () {\n      return once(this)\n    },\n    configurable: true\n  })\n\n  Object.defineProperty(Function.prototype, 'onceStrict', {\n    value: function () {\n      return onceStrict(this)\n    },\n    configurable: true\n  })\n})\n\nfunction once (fn) {\n  var f = function () {\n    if (f.called) return f.value\n    f.called = true\n    return f.value = fn.apply(this, arguments)\n  }\n  f.called = false\n  return f\n}\n\nfunction onceStrict (fn) {\n  var f = function () {\n    if (f.called)\n      throw new Error(f.onceError)\n    f.called = true\n    return f.value = fn.apply(this, arguments)\n  }\n  var name = fn.name || 'Function wrapped with `once`'\n  f.onceError = name + \" shouldn't be called more than once\"\n  f.called = false\n  return f\n}\n\n\n//# sourceURL=webpack://qr_code/./node_modules/once/once.js?");
 
 /***/ }),
 
@@ -795,26 +633,6 @@ eval("const canPromise = __webpack_require__(/*! ./can-promise */ \"./node_modul
 
 /***/ }),
 
-/***/ "./node_modules/simple-concat/index.js":
-/*!*********************************************!*\
-  !*** ./node_modules/simple-concat/index.js ***!
-  \*********************************************/
-/***/ ((module) => {
-
-eval("/*! simple-concat. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */\nmodule.exports = function (stream, cb) {\n  var chunks = []\n  stream.on('data', function (chunk) {\n    chunks.push(chunk)\n  })\n  stream.once('end', function () {\n    if (cb) cb(null, Buffer.concat(chunks))\n    cb = null\n  })\n  stream.once('error', function (err) {\n    if (cb) cb(err)\n    cb = null\n  })\n}\n\n\n//# sourceURL=webpack://qr_code/./node_modules/simple-concat/index.js?");
-
-/***/ }),
-
-/***/ "./node_modules/simple-get/index.js":
-/*!******************************************!*\
-  !*** ./node_modules/simple-get/index.js ***!
-  \******************************************/
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-eval("module.exports = simpleGet\n\nconst concat = __webpack_require__(/*! simple-concat */ \"./node_modules/simple-concat/index.js\")\nconst decompressResponse = __webpack_require__(/*! decompress-response */ \"./node_modules/decompress-response/index.js\") // excluded from browser build\nconst http = __webpack_require__(/*! http */ \"http\")\nconst https = __webpack_require__(/*! https */ \"https\")\nconst once = __webpack_require__(/*! once */ \"./node_modules/once/once.js\")\nconst querystring = __webpack_require__(/*! querystring */ \"querystring\")\nconst url = __webpack_require__(/*! url */ \"url\")\n\nconst isStream = o => o !== null && typeof o === 'object' && typeof o.pipe === 'function'\n\nfunction simpleGet (opts, cb) {\n  opts = Object.assign({ maxRedirects: 10 }, typeof opts === 'string' ? { url: opts } : opts)\n  cb = once(cb)\n\n  if (opts.url) {\n    const { hostname, port, protocol, auth, path } = url.parse(opts.url) // eslint-disable-line node/no-deprecated-api\n    delete opts.url\n    if (!hostname && !port && !protocol && !auth) opts.path = path // Relative redirect\n    else Object.assign(opts, { hostname, port, protocol, auth, path }) // Absolute redirect\n  }\n\n  const headers = { 'accept-encoding': 'gzip, deflate' }\n  if (opts.headers) Object.keys(opts.headers).forEach(k => (headers[k.toLowerCase()] = opts.headers[k]))\n  opts.headers = headers\n\n  let body\n  if (opts.body) {\n    body = opts.json && !isStream(opts.body) ? JSON.stringify(opts.body) : opts.body\n  } else if (opts.form) {\n    body = typeof opts.form === 'string' ? opts.form : querystring.stringify(opts.form)\n    opts.headers['content-type'] = 'application/x-www-form-urlencoded'\n  }\n\n  if (body) {\n    if (!opts.method) opts.method = 'POST'\n    if (!isStream(body)) opts.headers['content-length'] = Buffer.byteLength(body)\n    if (opts.json && !opts.form) opts.headers['content-type'] = 'application/json'\n  }\n  delete opts.body; delete opts.form\n\n  if (opts.json) opts.headers.accept = 'application/json'\n  if (opts.method) opts.method = opts.method.toUpperCase()\n\n  const originalHost = opts.hostname // hostname before potential redirect\n  const protocol = opts.protocol === 'https:' ? https : http // Support http/https urls\n  const req = protocol.request(opts, res => {\n    if (opts.followRedirects !== false && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {\n      opts.url = res.headers.location // Follow 3xx redirects\n      delete opts.headers.host // Discard `host` header on redirect (see #32)\n      res.resume() // Discard response\n\n      const redirectHost = url.parse(opts.url).hostname // eslint-disable-line node/no-deprecated-api\n      // If redirected host is different than original host, drop headers to prevent cookie leak (#73)\n      if (redirectHost !== null && redirectHost !== originalHost) {\n        delete opts.headers.cookie\n        delete opts.headers.authorization\n      }\n\n      if (opts.method === 'POST' && [301, 302].includes(res.statusCode)) {\n        opts.method = 'GET' // On 301/302 redirect, change POST to GET (see #35)\n        delete opts.headers['content-length']; delete opts.headers['content-type']\n      }\n\n      if (opts.maxRedirects-- === 0) return cb(new Error('too many redirects'))\n      else return simpleGet(opts, cb)\n    }\n\n    const tryUnzip = typeof decompressResponse === 'function' && opts.method !== 'HEAD'\n    cb(null, tryUnzip ? decompressResponse(res) : res)\n  })\n  req.on('timeout', () => {\n    req.abort()\n    cb(new Error('Request timed out'))\n  })\n  req.on('error', cb)\n\n  if (isStream(body)) body.on('error', cb).pipe(req)\n  else req.end(body)\n\n  return req\n}\n\nsimpleGet.concat = (opts, cb) => {\n  return simpleGet(opts, (err, res) => {\n    if (err) return cb(err)\n    concat(res, (err, data) => {\n      if (err) return cb(err)\n      if (opts.json) {\n        try {\n          data = JSON.parse(data.toString())\n        } catch (err) {\n          return cb(err, res, data)\n        }\n      }\n      cb(null, res, data)\n    })\n  })\n}\n\n;['get', 'post', 'put', 'patch', 'head', 'delete'].forEach(method => {\n  simpleGet[method] = (opts, cb) => {\n    if (typeof opts === 'string') opts = { url: opts }\n    return simpleGet(Object.assign({ method: method.toUpperCase() }, opts), cb)\n  }\n})\n\n\n//# sourceURL=webpack://qr_code/./node_modules/simple-get/index.js?");
-
-/***/ }),
-
 /***/ "./src/Check/access.ts":
 /*!*****************************!*\
   !*** ./src/Check/access.ts ***!
@@ -861,17 +679,7 @@ eval("//　ディレクトリを作成します\nexports.createDirectory = (path
   \******************************/
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-eval("//　QRコード画像を作成します\nexports.createQrCcode = (text, name, destination) => {\n    const QRCode = __webpack_require__(/*! qrcode */ \"./node_modules/qrcode/lib/index.js\");\n    const options = {\n        errorCorrectionLevel: 'M',\n        version: '4',\n        scale: '4',\n        maskPattern: '101',\n        mode: 'byte',\n    };\n    try {\n        if (text == null || name == null || destination == null) {\n            throw Error;\n        }\n        // QRコード画像\n        QRCode.toFile(`${destination}/${name}.png`, text, options);\n    }\n    catch (Error) {\n        throw 'QRコードを作成できませんでした';\n    }\n};\n\n\n//# sourceURL=webpack://qr_code/./src/Create/qrCode.ts?");
-
-/***/ }),
-
-/***/ "./src/Create/qrCodeExportCharacters.ts":
-/*!**********************************************!*\
-  !*** ./src/Create/qrCodeExportCharacters.ts ***!
-  \**********************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-eval("//　QRコード画像を作成します\nexports.createQrCcode = (array, name, destination) => {\n    const fs = __webpack_require__(/*! fs */ \"fs\");\n    const { createCanvas } = __webpack_require__(/*! canvas */ \"./node_modules/canvas/index.js\");\n    const canvas = createCanvas(1000, 1200);\n    const ctx = canvas.getContext('2d');\n    const QRCode = __webpack_require__(/*! qrcode */ \"./node_modules/qrcode/lib/index.js\");\n    const options = {\n        errorCorrectionLevel: 'M',\n        version: '4',\n        scale: '4',\n        maskPattern: '101',\n        mode: 'byte',\n    };\n    try {\n        if (array == null || name == null || destination == null) {\n            throw Error;\n        }\n        const codeText = array[0];\n        const referenceNumber = array[1];\n        const title1 = array[2];\n        const title2 = array[3];\n        const title3 = array[4];\n        const information1 = array[5];\n        const information2 = array[6];\n        const information3 = array[7];\n        const QRCode = __webpack_require__(/*! qrcode */ \"./node_modules/qrcode/lib/index.js\");\n        const options = {};\n        QRCode.toCanvas(canvas, codeText, options, function (error) {\n            // 文字を入れる\n            ctx.font = '40px ＭＳ 明朝, serif';\n            ctx.fillStyle = 'red';\n            ctx.fillText('a', 20, 80);\n            fs.writeFileSync(destination + referenceNumber + '.png', canvas.toBuffer());\n        });\n    }\n    catch (Error) {\n        throw 'QRコードを作成できませんでした';\n    }\n};\n\n\n//# sourceURL=webpack://qr_code/./src/Create/qrCodeExportCharacters.ts?");
+eval("//　QRコード画像を作成します\nexports.createQrCcode = (text, name, destination) => {\n    const QRCode = __webpack_require__(/*! qrcode */ \"./node_modules/qrcode/lib/index.js\");\n    const options = {\n        errorCorrectionLevel: \"M\",\n        version: \"4\",\n        scale: \"4\",\n        maskPattern: \"101\",\n        mode: \"byte\",\n    };\n    try {\n        if (text == null || name == null || destination == null) {\n            throw Error;\n        }\n        // QRコード画像\n        QRCode.toFile(`${destination}/${name}.png`, text.replace(/\\r?\\n/g, \"\"), options);\n    }\n    catch (Error) {\n        throw \"QRコードを作成できませんでした\";\n    }\n};\n\n\n//# sourceURL=webpack://qr_code/./src/Create/qrCode.ts?");
 
 /***/ }),
 
@@ -925,16 +733,6 @@ eval("exports.readCSV = (destination) => {\n    // パラメータチェック\n
 
 /***/ }),
 
-/***/ "./src/Mode/readCSVExportCharacters.ts":
-/*!*********************************************!*\
-  !*** ./src/Mode/readCSVExportCharacters.ts ***!
-  \*********************************************/
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-eval("exports.readCSVExportCharacters = (destination) => {\n    // パラメータチェック\n    const checkParameter = __webpack_require__(/*! ../Check/parameter */ \"./src/Check/parameter.ts\");\n    // ディレクトリ存在チェック\n    const checkExist = __webpack_require__(/*! ../Check/exist */ \"./src/Check/exist.ts\");\n    //　ファイル読み込み\n    const readFile = __webpack_require__(/*! ../File/readFile */ \"./src/File/readFile.ts\");\n    //　配列を作成\n    const toArray = __webpack_require__(/*! ../Create/texttoArray */ \"./src/Create/texttoArray.ts\");\n    //　QR作成()\n    const createQrCode = __webpack_require__(/*! ../Create/qrCodeExportCharacters */ \"./src/Create/qrCodeExportCharacters.ts\");\n    //　保存名作成\n    const saveName = __webpack_require__(/*! ../Create/saveName */ \"./src/Create/saveName.ts\");\n    //　CSVファイル\n    const csv = checkParameter.checkParameter(process.argv[4], '読み込みファイルパス');\n    // ファイル存在チェック\n    if (!checkExist.checkExsit(csv)) {\n        throw '読み込みファイルが存在しません';\n    }\n    // ファイルを読み込む\n    const file = readFile.outputText(csv);\n    // 配列に変換する\n    const array = toArray.outputArray(file);\n    // 配列を一行ずつ回して処理する\n    for (var idx in array) {\n        // 保存名称を設定する\n        const name = saveName.createNameMode1(csv, array[idx], idx);\n        // QRコード画像\n        createQrCode.createQrCcode(array[idx], name, destination);\n    }\n};\n\n\n//# sourceURL=webpack://qr_code/./src/Mode/readCSVExportCharacters.ts?");
-
-/***/ }),
-
 /***/ "./src/Mode/readID.ts":
 /*!****************************!*\
   !*** ./src/Mode/readID.ts ***!
@@ -971,17 +769,7 @@ eval("exports.readUuidCsv = (destination) => {\n    // パラメータチェッ�
   \**********************/
 /***/ ((__unused_webpack_module, __unused_webpack_exports, __webpack_require__) => {
 
-eval("// パラメータチェック\nconst checkParameter = __webpack_require__(/*! ./Check/parameter */ \"./src/Check/parameter.ts\");\n// ディレクトリ存在チェック\nconst checkExist = __webpack_require__(/*! ./Check/exist */ \"./src/Check/exist.ts\");\n// 権限チェック\nconst checkAccess = __webpack_require__(/*! ./Check/access */ \"./src/Check/access.ts\");\n// ファイル読み込みモード\nconst mode1 = __webpack_require__(/*! ./Mode/readCSV */ \"./src/Mode/readCSV.ts\");\n// 文字列モード\nconst mode2 = __webpack_require__(/*! ./Mode/readTXT */ \"./src/Mode/readTXT.ts\");\n// IDモード\nconst mode3 = __webpack_require__(/*! ./Mode/readID */ \"./src/Mode/readID.ts\");\n// UUIDモード(CSV)\nconst mode4 = __webpack_require__(/*! ./Mode/readUuidCsv */ \"./src/Mode/readUuidCsv.ts\");\n// ファイル読み込み　文字列書き出しモード\nconst mode5 = __webpack_require__(/*! ./Mode/readCSVExportCharacters */ \"./src/Mode/readCSVExportCharacters.ts\");\n//　１(ファイル読み込み)、２(文字列)、３(ID)、４(UUID付与CSV)、５(文字列書き出し)\nconst mode = checkParameter.checkParameter(process.argv[2], 'モード');\n//　保存先\nconst destination = checkParameter.checkParameter(process.argv[3], '保存先');\n// 保存先チェック\nif (!checkExist.checkExsit(destination)) {\n    // フォルダがない場合は作成する\n    console.log('保存先のフォルダがありません');\n    const directory = __webpack_require__(/*! ./Create/directory */ \"./src/Create/directory.ts\");\n    directory.createDirectory(destination);\n}\n// 権限チェック\ncheckAccess.checkAccess(destination);\n// 処理開始\nswitch (mode) {\n    case '1':\n        mode1.readCSV(destination);\n        break;\n    case '2':\n        mode2.readTXT(destination);\n        break;\n    case '3':\n        mode3.readID(destination);\n        break;\n    case '4':\n        mode4.readUuidCsv(destination);\n        break;\n    case '5':\n        mode5.readCSVExportCharacters(destination);\n        break;\n    default:\n        throw '1(ファイル読み込み)、2(文字列)、3(ID)、4(UUID付与CSV)、5(文字列書き出し)を選択してください。';\n}\n\n\n//# sourceURL=webpack://qr_code/./src/index.ts?");
-
-/***/ }),
-
-/***/ "./node_modules/wrappy/wrappy.js":
-/*!***************************************!*\
-  !*** ./node_modules/wrappy/wrappy.js ***!
-  \***************************************/
-/***/ ((module) => {
-
-eval("// Returns a wrapper function that returns a wrapped callback\n// The wrapper function should do some stuff, and return a\n// presumably different callback function.\n// This makes sure that own properties are retained, so that\n// decorations and such are not lost along the way.\nmodule.exports = wrappy\nfunction wrappy (fn, cb) {\n  if (fn && cb) return wrappy(fn)(cb)\n\n  if (typeof fn !== 'function')\n    throw new TypeError('need wrapper function')\n\n  Object.keys(fn).forEach(function (k) {\n    wrapper[k] = fn[k]\n  })\n\n  return wrapper\n\n  function wrapper() {\n    var args = new Array(arguments.length)\n    for (var i = 0; i < args.length; i++) {\n      args[i] = arguments[i]\n    }\n    var ret = fn.apply(this, args)\n    var cb = args[args.length-1]\n    if (typeof ret === 'function' && ret !== cb) {\n      Object.keys(cb).forEach(function (k) {\n        ret[k] = cb[k]\n      })\n    }\n    return ret\n  }\n}\n\n\n//# sourceURL=webpack://qr_code/./node_modules/wrappy/wrappy.js?");
+eval("// パラメータチェック\nconst checkParameter = __webpack_require__(/*! ./Check/parameter */ \"./src/Check/parameter.ts\");\n// ディレクトリ存在チェック\nconst checkExist = __webpack_require__(/*! ./Check/exist */ \"./src/Check/exist.ts\");\n// 権限チェック\nconst checkAccess = __webpack_require__(/*! ./Check/access */ \"./src/Check/access.ts\");\n// ファイル読み込みモード\nconst mode1 = __webpack_require__(/*! ./Mode/readCSV */ \"./src/Mode/readCSV.ts\");\n// 文字列モード\nconst mode2 = __webpack_require__(/*! ./Mode/readTXT */ \"./src/Mode/readTXT.ts\");\n// IDモード\nconst mode3 = __webpack_require__(/*! ./Mode/readID */ \"./src/Mode/readID.ts\");\n// UUIDモード(CSV)\nconst mode4 = __webpack_require__(/*! ./Mode/readUuidCsv */ \"./src/Mode/readUuidCsv.ts\");\n//　１(ファイル読み込み)、２(文字列)、３(ID)、４(UUID付与CSV)\nconst mode = checkParameter.checkParameter(process.argv[2], \"モード\");\n//　保存先\nconst destination = checkParameter.checkParameter(process.argv[3], \"保存先\");\n// 保存先チェック\nif (!checkExist.checkExsit(destination)) {\n    // フォルダがない場合は作成する\n    console.log(\"保存先のフォルダがありません\");\n    const directory = __webpack_require__(/*! ./Create/directory */ \"./src/Create/directory.ts\");\n    directory.createDirectory(destination);\n}\n// 権限チェック\ncheckAccess.checkAccess(destination);\n// 処理開始\nswitch (mode) {\n    case \"1\":\n        mode1.readCSV(destination);\n        break;\n    case \"2\":\n        mode2.readTXT(destination);\n        break;\n    case \"3\":\n        mode3.readID(destination);\n        break;\n    case \"4\":\n        mode4.readUuidCsv(destination);\n        break;\n    default:\n        throw \"1(ファイル読み込み)、2(文字列)、3(ID)、4(UUID付与CSV)、5(文字列書き出し)を選択してください。\";\n}\n\n\n//# sourceURL=webpack://qr_code/./src/index.ts?");
 
 /***/ }),
 
@@ -1029,28 +817,6 @@ module.exports = require("fs");
 
 /***/ }),
 
-/***/ "http":
-/*!***********************!*\
-  !*** external "http" ***!
-  \***********************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("http");
-
-/***/ }),
-
-/***/ "https":
-/*!************************!*\
-  !*** external "https" ***!
-  \************************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("https");
-
-/***/ }),
-
 /***/ "path":
 /*!***********************!*\
   !*** external "path" ***!
@@ -1062,17 +828,6 @@ module.exports = require("path");
 
 /***/ }),
 
-/***/ "querystring":
-/*!******************************!*\
-  !*** external "querystring" ***!
-  \******************************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("querystring");
-
-/***/ }),
-
 /***/ "stream":
 /*!*************************!*\
   !*** external "stream" ***!
@@ -1081,17 +836,6 @@ module.exports = require("querystring");
 
 "use strict";
 module.exports = require("stream");
-
-/***/ }),
-
-/***/ "url":
-/*!**********************!*\
-  !*** external "url" ***!
-  \**********************/
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("url");
 
 /***/ }),
 
@@ -1115,17 +859,6 @@ module.exports = require("util");
 "use strict";
 module.exports = require("zlib");
 
-/***/ }),
-
-/***/ "./node_modules/canvas/package.json":
-/*!******************************************!*\
-  !*** ./node_modules/canvas/package.json ***!
-  \******************************************/
-/***/ ((module) => {
-
-"use strict";
-eval("module.exports = JSON.parse('{\"name\":\"canvas\",\"description\":\"Canvas graphics API backed by Cairo\",\"version\":\"2.9.0\",\"author\":\"TJ Holowaychuk <tj@learnboost.com>\",\"main\":\"index.js\",\"browser\":\"browser.js\",\"contributors\":[\"Nathan Rajlich <nathan@tootallnate.net>\",\"Rod Vagg <r@va.gg>\",\"Juriy Zaytsev <kangax@gmail.com>\"],\"keywords\":[\"canvas\",\"graphic\",\"graphics\",\"pixman\",\"cairo\",\"image\",\"images\",\"pdf\"],\"homepage\":\"https://github.com/Automattic/node-canvas\",\"repository\":\"git://github.com/Automattic/node-canvas.git\",\"scripts\":{\"prebenchmark\":\"node-gyp build\",\"benchmark\":\"node benchmarks/run.js\",\"lint\":\"standard examples/*.js test/server.js test/public/*.js benchmarks/run.js lib/context2d.js util/has_lib.js browser.js index.js\",\"test\":\"mocha test/*.test.js\",\"pretest-server\":\"node-gyp build\",\"test-server\":\"node test/server.js\",\"install\":\"node-pre-gyp install --fallback-to-build\",\"dtslint\":\"dtslint types\"},\"binary\":{\"module_name\":\"canvas\",\"module_path\":\"build/Release\",\"host\":\"https://github.com/Automattic/node-canvas/releases/download/\",\"remote_path\":\"v{version}\",\"package_name\":\"{module_name}-v{version}-{node_abi}-{platform}-{libc}-{arch}.tar.gz\"},\"files\":[\"binding.gyp\",\"lib/\",\"src/\",\"util/\",\"types/index.d.ts\"],\"types\":\"types/index.d.ts\",\"dependencies\":{\"@mapbox/node-pre-gyp\":\"^1.0.0\",\"nan\":\"^2.15.0\",\"simple-get\":\"^3.0.3\"},\"devDependencies\":{\"@types/node\":\"^10.12.18\",\"assert-rejects\":\"^1.0.0\",\"dtslint\":\"^4.0.7\",\"express\":\"^4.16.3\",\"mocha\":\"^5.2.0\",\"pixelmatch\":\"^4.0.2\",\"standard\":\"^12.0.1\",\"typescript\":\"^4.2.2\"},\"engines\":{\"node\":\">=6\"},\"license\":\"MIT\"}');\n\n//# sourceURL=webpack://qr_code/./node_modules/canvas/package.json?");
-
 /***/ })
 
 /******/ 	});
@@ -1142,35 +875,17 @@ eval("module.exports = JSON.parse('{\"name\":\"canvas\",\"description\":\"Canvas
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			id: moduleId,
-/******/ 			loaded: false,
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
 /******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
-/******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	/* webpack/runtime/node module decorator */
-/******/ 	(() => {
-/******/ 		__webpack_require__.nmd = (module) => {
-/******/ 			module.paths = [];
-/******/ 			if (!module.children) module.children = [];
-/******/ 			return module;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/publicPath */
-/******/ 	(() => {
-/******/ 		__webpack_require__.p = "";
-/******/ 	})();
 /******/ 	
 /************************************************************************/
 /******/ 	
