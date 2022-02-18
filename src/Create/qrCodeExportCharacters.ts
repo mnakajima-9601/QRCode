@@ -36,7 +36,7 @@ exports.createQrCcode = (array: Object, name: String, destination: String) => {
       ctx.font = '40px ＭＳ 明朝, serif'
       ctx.fillStyle = 'red'
       // ここでエラー
-      ctx.fillText('テストよう文字列s', 20, 80)
+      ctx.fillText('テストよう', 20, 80)
 
       fs.writeFileSync(destination + referenceNumber + '.png', canvas.toBuffer())
     })
